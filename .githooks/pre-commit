@@ -1,0 +1,13 @@
+#!/bin/sh
+# Regenerate the committed text snapshot whenever the workbook is part of the commit,
+# so the review surface never drifts from the canonical .xlsx.
+#
+# Uses `uv run`, which provisions the script's dependencies (openpyxl) automatically
+# from the PEP 723 metadata block inside export_snapshot.py. No venv to activate.
+set -e
+
+# Only act if an .xlsx under data/ is staged.
+if git diff --cached --name-only | grep -q '^data/.*\.xlsx$'; then
+    uv run tools/scripts/export_snapshot.py
+    git add snapshot/
+fi

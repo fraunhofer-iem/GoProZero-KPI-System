@@ -1,0 +1,34 @@
+# UV / Python
+.venv/
+__pycache__/
+*.pyc
+
+# Excel lock/temp files
+~$*.xlsx
+
+# Literature corpus: large static reference PDFs (216 MB); kept local, not versioned.
+data/literature/
+
+# Company-specific material: workshop inputs (PDFs/notes) and per-company scope
+# files consumed by build_company_kpi.py. Kept local, not versioned.
+data/others/
+
+# Company-specific literature cross-check reports. Kept local, not versioned.
+# (Generic, domain-level reviews under reviews/ are versioned.)
+reviews/*-crosscheck.md
+
+# output/ — generated artifacts: derived workbooks, catalog JSON, HTML manuals and
+# visualizations, PDFs, and per-project build subfolders. All of it is regenerable from
+# data/ + tools/, and some of it is confidential (partner-specific builds), so the whole
+# directory's *contents* are ignored rather than enumerated by extension — a new artifact
+# or subfolder is ignored by default instead of needing a rule.
+# The directory itself stays in git via .gitkeep; the generic-master visualization is the
+# one committed artifact. Sources live in tools/templates/ + tools/scripts/, both versioned.
+# Force-add a specific deliverable with `git add -f output/<file>` if one is ever needed.
+output/*
+!output/.gitkeep
+!output/kpi-system-visualization.html
+
+# OS cruft
+.DS_Store
+Thumbs.db
