@@ -225,7 +225,7 @@
   .footnote{}
   ref-toast{}
   #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#16241c;color:#fff;padding:14px 18px;border-radius:12px;max-width:min(560px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:100;font-size:.9rem}
-  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
   #toast .tt{font-family:var(--mono);font-weight:800;color:#9be3b8;margin-bottom:3px}
   #toast .ty{font-size:.72rem;color:#9fb2a7;text-transform:uppercase;letter-spacing:.05em;margin-top:6px}
   #toast a{color:#9be3b8}
@@ -741,6 +741,13 @@ function showRef(label){
   t.classList.add('show');
   clearTimeout(showRef._t); showRef._t=setTimeout(()=>t.classList.remove('show'),6000);
 }
+// The toast can hold a link, so hold it open while the pointer is on it. Without
+// this the 6s timer can retract the toast out from under the click.
+$('#toast').addEventListener('mouseenter',()=>clearTimeout(showRef._t));
+$('#toast').addEventListener('mouseleave',()=>{
+  clearTimeout(showRef._t);
+  showRef._t=setTimeout(()=>$('#toast').classList.remove('show'),1500);
+});
 
 // jump to an id: switch domain if needed, expand path, select
 function gotoId(id){
