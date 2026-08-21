@@ -1,0 +1,62 @@
+# Publish the GoProZero KPI landing page to GitHub Pages.
+#
+# The page is built here rather than committed: output/ is gitignored, so the runner's
+# clone has no HTML in it, and building on every push means the published page can never
+# drift from data/KPI List.xlsx. Requires the repository to be public (or on a paid plan)
+# and Settings -> Pages -> Source set to "GitHub Actions".
+name: Deploy landing page
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish rather than cancelling it: a half-applied Pages deploy
+# would leave the live site in an in-between state.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # uv provisions each script's dependencies from its PEP 723 header, and downloads
+      # a matching Python itself, so no setup-python step is needed.
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Build the site
+        run: uv run tools/scripts/build_site.py
+
+      # Fail loudly rather than deploying a broken or privacy-leaking page.
+      - name: Check the page is complete
+        run: |
+          test -s site/index.html
+          # an unfilled template marker means the catalog never got injected
+          ! grep -q '__CATALOG_JSON__' site/index.html
+          # the fonts are embedded; a re-added <link> would call out to Google
+          ! grep -qE 'fonts\.(googleapis|gstatic)\.com' site/index.html
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
