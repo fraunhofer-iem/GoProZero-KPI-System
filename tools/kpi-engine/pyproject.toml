@@ -1,0 +1,36 @@
+[project]
+name = "kpi-engine"
+version = "0.1.0"
+description = "Calculation engine for the product-sustainability KPI workbook"
+requires-python = ">=3.10"
+dependencies = [
+    "openpyxl>=3.1",
+    "pydantic>=2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "mypy>=1.8",
+]
+
+[project.scripts]
+kpi-engine = "kpi_engine.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.5.0,<10"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "kpi_engine"
+module-root = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unused_ignores = true
+exclude = ["tests/"]

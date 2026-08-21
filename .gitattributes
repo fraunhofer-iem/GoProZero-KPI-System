@@ -1,0 +1,7 @@
+# Treat the workbook as binary (no EOL conversion, not mergeable) but give it a
+# readable textconv diff on the command line.
+*.xlsx -text -merge diff=xlsx
+
+# Snapshot files are text with stable LF endings.
+snapshot/*  text eol=lf
+*.tsv       text eol=lf

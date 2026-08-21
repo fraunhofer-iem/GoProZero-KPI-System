@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Product Sustainability KPI System — Visual User Manual</title>
+<!--
+  ============================================================================
+  EDITING THIS FILE  ·  tools/templates/kpi_visualization.html.template
+  ============================================================================
+  This is the AUTHORED SOURCE for the KPI-system visualization. The build
+  script (tools/scripts/build_visualization.py) injects the KPI catalog JSON
+  into the single placeholder marker near the bottom (the script#catalog block)
+  and writes output/kpi-system-visualization.html. Rebuild after any edit:
+
+      uv run tools/scripts/build_visualization.py
+
+  >>> This page is NOT generated from docs/USER_MANUAL.md. <<<
+  The manual and this page are two INDEPENDENT renderings of the same KPI
+  system. Editing the manual does NOT change this page. When you change the
+  manual's wording, mirror it here by hand (and vice versa).
+
+  Two kinds of content live on this page:
+
+  (A) AUTO-SYNCED from the catalog JSON at build time — do NOT hand-edit;
+      it refreshes itself when the catalog changes:
+        - the interactive hierarchy tree + the detail panel  (#tree / #detail)
+        - the hero stat counts                               (#heroPills)
+        - the five-domain "big picture" fan                  (#fan)
+        - the per-strategy COUNTS on the strategy cards       (#stratGrid)
+        - the standards/references table                     (#refTable)
+
+  (B) AUTHORED HERE by hand — this is the prose/tables that MIRROR the manual.
+      If the manual's text changes, edit it HERE too:
+        - every section intro / lede paragraph and callout box (the <section>
+          markup below: #picture, #explorer, #levels, #aggregation,
+          #strategies, #weights, #workflow, #glossary, #columns, and footer)
+        - the ID-scheme + R-collision cards, the weights/normalization
+          narrative, and the numbered workflow steps (#workflow)
+      Some authored content lives in JS constants/arrays (search the <script>):
+        - STRAT_INFO ............ the six strategy NAMES + descriptions
+        - #rTable IIFE .......... the R0–R9 circular-economy principles
+        - #plcTable IIFE ........ the P/S/M/D/U/E life-cycle stage codes
+        - #colTable IIFE ........ the 22-column row reference
+        - #levelLegend IIFE ..... the five level rows + worked examples
+        - #ladder IIFE .......... the carbon-footprint worked-example chain
+  ============================================================================
+-->
+<style>
+  :root{
+    --bg:#f6f8f6; --panel:#ffffff; --ink:#16241c; --muted:#5c6b62; --line:#e2e9e4;
+    --accent:#1f7a4d; --accent-dark:#155c39; --accent-soft:#e7f3ec;
+    /* level palette: deep green -> light green -> grey leaf */
+    --l1:#155c39; --l2:#2e7d52; --l3:#4a9b6e; --l4:#86c6a1; --l5:#9aa4ab;
+    --l1bg:#e6f1ea; --l2bg:#eaf4ee; --l3bg:#eff7f2; --l4bg:#f3faf6; --l5bg:#f1f3f4;
+    --warn:#b7791f; --warnbg:#fdf6e7;
+    --shadow:0 1px 2px rgba(16,40,28,.06),0 8px 24px rgba(16,40,28,.06);
+    --radius:14px;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;font-size:16px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,.mono{font-family:var(--mono);font-size:.86em}
+  h2{font-size:1.7rem;margin:.2em 0 .1em;letter-spacing:-.01em}
+  h3{font-size:1.15rem;margin:1.4em 0 .4em}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 22px}
+  .kicker{text-transform:uppercase;letter-spacing:.13em;font-size:.72rem;font-weight:700;color:var(--accent)}
+
+  /* ---- nav ---- */
+  nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;gap:18px;height:56px}
+  nav .brand{font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:9px;white-space:nowrap}
+  nav .dot{width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,var(--l3),var(--l1))}
+  nav .links{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+  nav .links a{color:var(--muted);font-size:.86rem;font-weight:600;padding:6px 10px;border-radius:8px}
+  nav .links a:hover{background:var(--accent-soft);color:var(--accent-dark);text-decoration:none}
+
+  /* ---- hero ---- */
+  header.hero{padding:64px 0 40px;background:
+     radial-gradient(900px 380px at 80% -8%,#dff0e6 0,transparent 60%),
+     radial-gradient(700px 300px at 0% 0%,#eaf4ef 0,transparent 55%)}
+  header.hero h1{font-size:clamp(2.1rem,4.6vw,3.3rem);line-height:1.05;letter-spacing:-.025em;margin:.25em 0 .35em}
+  header.hero p.lead{font-size:1.18rem;color:var(--muted);margin:0 0 26px}
+  .meta-pills{display:flex;gap:10px;flex-wrap:wrap}
+  .pill{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:.82rem;font-weight:600;box-shadow:var(--shadow);display:flex;align-items:center;gap:7px}
+  .pill b{color:var(--accent-dark);font-size:1.02rem}
+
+  section{padding:46px 0;border-top:1px solid var(--line)}
+  section > .wrap > p{color:#33433a}
+  .lede{font-size:1.05rem}
+
+  /* ---- big picture diagram ---- */
+  .bigpic{display:flex;flex-direction:column;align-items:center;gap:0;margin:26px 0 6px}
+  .crown{background:linear-gradient(135deg,var(--l1),#0e4a2c);color:#fff;border-radius:14px;padding:16px 26px;text-align:center;box-shadow:var(--shadow);min-width:280px}
+  .crown .t{font-size:1.25rem;font-weight:800}
+  .crown .s{opacity:.85;font-size:.85rem}
+  .connector{width:2px;height:26px;background:var(--l3)}
+  .fan{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;width:100%}
+  @media(max-width:780px){.fan{grid-template-columns:repeat(2,1fr)}}
+  .domcard{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--panel);box-shadow:var(--shadow);border-top:4px solid var(--dc);transition:transform .15s,box-shadow .15s;cursor:default}
+  .domcard:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(16,40,28,.12)}
+  .domcard .code{font-family:var(--mono);font-size:.74rem;color:#fff;background:var(--dc);padding:2px 8px;border-radius:6px;font-weight:700;display:inline-block}
+  .domcard .nm{font-weight:700;margin:8px 0 4px;font-size:.98rem;line-height:1.2}
+  .domcard .ds{font-size:.8rem;color:var(--muted)}
+  .flow-note{margin-top:22px;background:var(--accent-soft);border:1px solid #cfe7d8;border-radius:12px;padding:14px 18px;font-size:.95rem;max-width:760px;margin-left:auto;margin-right:auto;text-align:center}
+
+  /* ---- generic grid cards ---- */
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:820px){.g2,.g3{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  .card h4{margin:0 0 6px;font-size:1rem}
+  .card .tag{font-family:var(--mono);font-size:.74rem;background:var(--accent-soft);color:var(--accent-dark);padding:3px 8px;border-radius:6px;font-weight:700;display:inline-block;margin-bottom:8px}
+  .card p{margin:0;font-size:.9rem;color:#3a4a41}
+
+  /* ---- level legend ---- */
+  .levels{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .lvl{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--panel)}
+  .lvl .chip{width:42px;height:42px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;flex-shrink:0}
+  .lvl .ttl{font-weight:700}
+  .lvl .ex{font-family:var(--mono);font-size:.8rem;color:var(--muted);margin-left:auto;text-align:right}
+
+  /* ---- explorer ---- */
+  .explorer{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .ex-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);background:#fbfdfb}
+  .domtabs{display:flex;gap:6px;flex-wrap:wrap}
+  .domtab{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 12px;font-weight:700;font-size:.84rem;cursor:pointer;color:var(--muted);display:flex;align-items:center;gap:7px}
+  .domtab .b{width:10px;height:10px;border-radius:3px;background:var(--dc)}
+  .domtab[aria-selected="true"]{color:#fff;background:var(--dc);border-color:var(--dc)}
+  .domtab[aria-selected="true"] .b{background:rgba(255,255,255,.85)}
+  .ex-search{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .ex-search input{border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:.88rem;width:230px;font-family:var(--sans)}
+  .ex-search input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  .ex-btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 11px;font-size:.8rem;font-weight:600;cursor:pointer;color:var(--muted)}
+  .ex-btn:hover{background:var(--accent-soft);color:var(--accent-dark)}
+  .ex-body{display:grid;grid-template-columns:1.15fr .85fr;min-height:520px}
+  @media(max-width:900px){.ex-body{grid-template-columns:1fr}}
+  .treepane{padding:10px 6px 16px 12px;overflow:auto;max-height:640px;border-right:1px solid var(--line)}
+  @media(max-width:900px){.treepane{max-height:420px;border-right:none;border-bottom:1px solid var(--line)}}
+
+  .node{margin:1px 0}
+  .node-row{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+  .node-row:hover{background:#f2f7f3}
+  .node-row.sel{background:var(--accent-soft);border-color:#bfe0cc}
+  .twist{width:16px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.7rem;transition:transform .12s;user-select:none}
+  .twist.open{transform:rotate(90deg)}
+  .twist.leaf{visibility:hidden}
+  .lvlbadge{font-family:var(--mono);font-size:.66rem;font-weight:800;color:#fff;border-radius:5px;padding:2px 5px;flex-shrink:0;min-width:34px;text-align:center}
+  .node-id{font-family:var(--mono);font-size:.78rem;color:var(--muted);flex-shrink:0}
+  .node-name{font-size:.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .node-row.raw .node-name{color:#414b45}
+  .mini{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:1px 6px;border-radius:999px;flex-shrink:0}
+  .mini.data{background:#eceff1;color:#566;border:1px solid #dfe4e6}
+  .mini.shared{background:#fff3e0;color:#9a6a14;border:1px solid #f0dcb4}
+  .children{margin-left:18px;border-left:1px dashed #d6e0d9;padding-left:6px;display:none}
+  .children.open{display:block}
+
+  /* detail pane */
+  .detail{padding:20px 22px;overflow:auto;max-height:640px}
+  @media(max-width:900px){.detail{max-height:none}}
+  .detail .empty{color:var(--muted);font-size:.92rem;display:flex;flex-direction:column;gap:8px;height:100%;justify-content:center;align-items:center;text-align:center}
+  .d-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .d-id{font-family:var(--mono);font-weight:800;color:#fff;padding:4px 9px;border-radius:7px}
+  .d-name{font-size:1.25rem;font-weight:800;line-height:1.15;margin:8px 0 2px}
+  .d-strat{display:inline-block;font-family:var(--mono);font-size:.74rem;background:#eef2f0;border:1px solid var(--line);border-radius:7px;padding:3px 8px;font-weight:700;margin-top:6px}
+  .d-desc{margin:12px 0;color:#34433b;font-size:.95rem}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:10px 0;font-size:.88rem}
+  .kv dt{color:var(--muted);font-weight:600}
+  .kv dd{margin:0}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .refchip,.idchip,.stagechip{font-family:var(--mono);font-size:.74rem;border-radius:6px;padding:2px 7px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--accent-dark)}
+  .refchip:hover{background:var(--accent-soft)}
+  .idchip{cursor:pointer;background:#f3f7f4}
+  .idchip:hover{background:var(--accent-soft)}
+  .stagechip{cursor:default;background:#eef2f0;color:#46554c}
+  .d-block{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+  .d-block .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:6px}
+  .formula{font-family:var(--mono);font-size:.82rem;background:#f1f5f2;border:1px solid var(--line);border-radius:8px;padding:9px 11px;white-space:pre-wrap;word-break:break-word}
+  .breadcrumb{font-size:.78rem;color:var(--muted);margin-bottom:4px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+  .breadcrumb .idchip{font-size:.7rem;padding:1px 6px}
+
+  /* ---- tables ---- */
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);background:var(--panel)}
+  table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:520px}
+  th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f3f7f4;font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);position:sticky;top:0}
+  tbody tr:hover{background:#fafdfb}
+  td code{background:#eef2f0;padding:1px 5px;border-radius:5px}
+
+  details.fold{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:0;overflow:hidden}
+  details.fold>summary{cursor:pointer;padding:16px 20px;font-weight:700;list-style:none;display:flex;align-items:center;gap:10px}
+  details.fold>summary::-webkit-details-marker{display:none}
+  details.fold>summary::before{content:"▸";color:var(--accent);transition:transform .15s}
+  details.fold[open]>summary::before{transform:rotate(90deg)}
+  details.fold .inner{padding:0 20px 18px}
+
+  .callout{border-left:4px solid var(--warn);background:var(--warnbg);border-radius:0 10px 10px 0;padding:14px 18px;margin:18px 0;font-size:.92rem}
+  .callout b{color:#8a5d12}
+  .callout.info{border-color:var(--accent);background:var(--accent-soft)}
+  .callout.info b{color:var(--accent-dark)}
+
+  /* steps */
+  ol.steps{list-style:none;counter-reset:s;padding:0;margin:16px 0 0;display:grid;gap:12px}
+  ol.steps li{counter-increment:s;position:relative;padding:14px 16px 14px 56px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+  ol.steps li::before{content:counter(s);position:absolute;left:14px;top:14px;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:.9rem}
+  ol.steps li b{display:block;margin-bottom:2px}
+  ol.steps li span{font-size:.9rem;color:#3a4a41}
+
+  /* normalization viz */
+  .normbox{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.normbox{grid-template-columns:1fr}}
+  .band{border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--panel)}
+  .band h4{margin:0 0 4px}
+  .gradient{height:18px;border-radius:9px;margin:14px 0 6px}
+  .gradient.up{background:linear-gradient(90deg,#e0534e,#e6b800,#2e9e5b)}
+  .gradient.down{background:linear-gradient(90deg,#2e9e5b,#e6b800,#e0534e)}
+  .bandlbl{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);font-family:var(--mono)}
+
+  footer{padding:34px 0 60px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
+  .footnote{}
+  ref-toast{}
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#16241c;color:#fff;padding:14px 18px;border-radius:12px;max-width:min(560px,92vw);box-shadow:0 12px 40px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:100;font-size:.9rem}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast .tt{font-family:var(--mono);font-weight:800;color:#9be3b8;margin-bottom:3px}
+  #toast .ty{font-size:.72rem;color:#9fb2a7;text-transform:uppercase;letter-spacing:.05em;margin-top:6px}
+  #toast a{color:#9be3b8}
+</style>
+</head>
+<body>
+<nav>
+  <div class="wrap">
+    <span class="brand"><span class="dot"></span>GoProZero KPI System</span>
+    <span class="links">
+      <a href="#picture">Big picture</a>
+      <a href="#explorer">Explorer</a>
+      <a href="#levels">Levels</a>
+      <a href="#aggregation">Aggregation</a>
+      <a href="#strategies">Strategies</a>
+      <a href="#weights">Weights</a>
+      <a href="#workflow">Workflow</a>
+      <a href="#glossary">Glossary</a>
+      <a href="#columns">Columns</a>
+    </span>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="kicker">A Visual User Manual</span>
+    <h1>One product, scored across five dimensions of sustainability.</h1>
+    <p class="lead">A visual companion to the <em>KPI&nbsp;List</em> workbook — a <b>product-focused</b> catalogue of sustainability indicators. Raw measurements at the bottom flow upward and combine into a single composite <b>Sustainability</b> score. Explore the live hierarchy below.</p>
+    <div class="meta-pills" id="heroPills"></div>
+  </div>
+</header>
+
+<!-- BIG PICTURE -->
+<section id="picture">
+  <div class="wrap">
+    <span class="kicker">The big picture</span>
+    <h2>From five domains to one score</h2>
+    <p class="lede">At the very top sits one number. It is built from five domains, each of which breaks down into sub-scores, and those into deeper scores, until you reach the raw data points someone must supply.</p>
+    <div class="bigpic">
+      <div class="crown">
+        <div class="t">Sustainability</div>
+        <div class="s">composite of the five domains</div>
+      </div>
+      <div class="connector"></div>
+      <div class="fan" id="fan"></div>
+    </div>
+    <div class="flow-note">
+      The domains are <b>not fully separate</b>. A few raw inputs feed parents in more than one domain, so the structure is really a <b>network</b>, not five isolated trees — the same measurement can legitimately matter to several aspects of sustainability.
+    </div>
+  </div>
+</section>
+
+<!-- EXPLORER -->
+<section id="explorer">
+  <div class="wrap">
+    <span class="kicker">Interactive</span>
+    <h2>Explore the hierarchy</h2>
+    <p class="lede">This tree is built from the actual master catalogue. Pick a domain, expand the branches, and click any indicator to see what it measures, how it is computed, and the standards behind it. Grey leaves marked <span class="mini data" style="vertical-align:middle">DATA</span> are the raw numbers a company supplies.</p>
+    <div class="explorer" style="margin-top:16px">
+      <div class="ex-top">
+        <div class="domtabs" id="domtabs" role="tablist"></div>
+        <div class="ex-search">
+          <input id="search" type="search" placeholder="Search indicators…" autocomplete="off">
+          <button class="ex-btn" id="expandAll">Expand</button>
+          <button class="ex-btn" id="collapseAll">Collapse</button>
+        </div>
+      </div>
+      <div class="ex-body">
+        <div class="treepane" id="tree"></div>
+        <div class="detail" id="detail">
+          <div class="empty">
+            <div style="font-size:2rem">🌿</div>
+            <div>Select an indicator from the tree to see its full definition.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LEVELS -->
+<section id="levels">
+  <div class="wrap">
+    <span class="kicker">Structure</span>
+    <h2>Five levels, colour-coded</h2>
+    <p class="lede">Every indicator sits at one of five levels. Higher-level scores are darker green; the Level-5 raw data points are grey — those are the ones you supply numbers for.</p>
+    <div class="levels" id="levelLegend"></div>
+    <div class="grid g2" style="margin-top:18px">
+      <div class="card">
+        <h4>The ID scheme</h4>
+        <p>Each domain has a letter prefix. <code>EN0</code> is the domain score; <code>EN1</code>, <code>EN2</code>… are Level-2 sub-scores; add a digit per level down (<code>EN11</code>, <code>EN131</code>); raw data points are written <b>with a hyphen</b> (<code>EN1-1</code>). The ID itself encodes the tree.</p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--warn)">
+        <h4>⚠ A naming collision to watch for</h4>
+        <p>In <b>Resource Efficiency</b> the IDs <code>R0</code>–<code>R9</code> look identical to the circular-economy <b>R-principles</b> <code>R0</code>–<code>R9</code> (R2 = <em>Reduce</em>) in the glossary. They are <b>completely different things</b>. Always read <code>R2</code> by context.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AGGREGATION -->
+<section id="aggregation">
+  <div class="wrap">
+    <span class="kicker">How it computes</span>
+    <h2>Read top-down, calculate bottom-up</h2>
+    <p class="lede">You read the tree top-down to understand it, but numbers flow <b>upward</b>. You supply the Level-5 raw data points; each score combines its children, feeds its parent, and so on up to the domain score and finally the composite.</p>
+    <div class="card" style="margin-top:16px">
+      <div class="lbl" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:8px">A worked example — the carbon-footprint branch</div>
+      <div id="ladder"></div>
+    </div>
+  </div>
+</section>
+
+<!-- STRATEGIES -->
+<section id="strategies">
+  <div class="wrap">
+    <span class="kicker">The engine</span>
+    <h2 id="stratHeading">Calculation strategies</h2>
+    <p class="lede">Every row's <em>Calculation Strategy</em> says how its value is produced. Leaves are raw values; above them a row is either a <b>score</b> (always 0–1) or a <b>raw total</b> (a sum or formula in kg, €, …). The number on each card is how many indicators use that strategy.</p>
+    <div class="grid g3" id="stratGrid" style="margin-top:16px"></div>
+  </div>
+</section>
+
+<!-- WEIGHTS & NORMALIZATION -->
+<section id="weights">
+  <div class="wrap">
+    <span class="kicker">Per-company settings</span>
+    <h2>Weights &amp; normalization</h2>
+    <div class="grid g2" style="margin-top:12px">
+      <div>
+        <h3>Weights sum to 1</h3>
+        <p>When a score combines several children, a <b>weight</b> says how much each child counts. Under any one parent, the weights of all direct children should add up to <b>1</b>, keeping every score on the same 0–1 scale. The template ships <b>equal 1/N defaults</b>; each company overrides them. If a whole branch has no data, its weight is effectively treated as 0 so it drops out rather than dragging the score down.</p>
+        <div class="callout info" style="margin-top:6px"><b>1 = good, 0 = bad</b> everywhere. Scores are shown as a percentage of that 0–1 fraction.</div>
+      </div>
+      <div>
+        <h3>Normalization &amp; direction</h3>
+        <p>Raw values are mapped to 0–1 by min-max normalization: <code>(Value − Min) / (Max − Min)</code>. There is <b>no separate higher/lower switch</b> — direction is decided entirely by which bound is larger.</p>
+        <div class="normbox" style="margin-top:12px">
+          <div class="band">
+            <h4>Higher is better</h4>
+            <div style="font-size:.82rem;color:var(--muted)">shares, ratings, efficiency</div>
+            <div class="gradient up"></div>
+            <div class="bandlbl"><span>Min&nbsp;=&nbsp;worst</span><span>Max&nbsp;=&nbsp;best</span></div>
+            <div style="font-size:.8rem;margin-top:6px">Min &lt; Max (ascending band)</div>
+          </div>
+          <div class="band">
+            <h4>Lower is better</h4>
+            <div style="font-size:.82rem;color:var(--muted)">intensity, time, cost</div>
+            <div class="gradient down"></div>
+            <div class="bandlbl"><span>Min&nbsp;=&nbsp;worst</span><span>Max&nbsp;=&nbsp;best</span></div>
+            <div style="font-size:.8rem;margin-top:6px"><b>Invert:</b> set Min &gt; Max</div>
+          </div>
+        </div>
+        <div class="callout" style="margin-top:12px"><b>Mind the direction.</b> For e.g. energy-per-unit where 25 kWh is worst and 0 is ideal, set <b>Min&nbsp;=&nbsp;25, Max&nbsp;=&nbsp;0</b>. A 5 kWh product then scores 0.8. An ordinary ascending band would score it backwards.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WORKFLOW -->
+<section id="workflow">
+  <div class="wrap">
+    <span class="kicker">For practitioners</span>
+    <h2>The recommended workflow</h2>
+    <p class="lede">The key sequence: <b>understand top-down → gather data first → set weights and min/max afterwards.</b></p>
+    <ol class="steps">
+      <li><b>Read the Overview &amp; Top-Level sheets.</b><span>Orient yourself: the goal, the structure, the R-principles, and what each of the five domains means.</span></li>
+      <li><b>Pick a domain and drill down, top-down.</b><span>Read from the Level-1 score down to the Level-5 raw data points to see why each input is needed and where it fits.</span></li>
+      <li><b>Identify the raw inputs you must supply.</b><span>They are the grey <code>Data? = x</code> rows. The Metrics List sheet is the flat checklist of all of them, with links back to context.</span></li>
+      <li><b>Gather the data first.</b><span>Use each row's Unit, Data Source (often LCA) and Life-Cycle Stages to know what to measure — before worrying about weights.</span></li>
+      <li><b>Then set the per-company values.</b><span>Fill in Weights (sum to 1 under each parent) and the Target Min / Target Max reference values. Mind the direction for lower-is-better metrics.</span></li>
+      <li><b>Consult the References as needed.</b><span>For any KPI whose basis you want to verify, follow its Reference code to the References sheet.</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- GLOSSARY -->
+<section id="glossary">
+  <div class="wrap">
+    <span class="kicker">Reference</span>
+    <h2>Glossary</h2>
+    <div class="grid g2" style="margin-top:14px">
+      <div>
+        <h3>R-principles (R0–R9) — circular-economy hierarchy</h3>
+        <div class="tablewrap"><table id="rTable"><thead><tr><th>Code</th><th>Principle</th><th>Meaning</th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div>
+        <h3>Product Life-Cycle (PLC) stage codes</h3>
+        <div class="tablewrap"><table id="plcTable"><thead><tr><th>Code</th><th>Stage</th></tr></thead><tbody></tbody></table></div>
+        <h3>Methodology terms</h3>
+        <div class="card">
+          <p style="margin-bottom:8px"><b>Normalized</b> — min-max scaling onto 0–1; direction set by which bound is larger.</p>
+          <p style="margin-bottom:8px"><b>Inflow / Outflow</b> — quantity entering / leaving the process scope.</p>
+          <p style="margin-bottom:8px"><b>LCA</b> — Life Cycle Assessment; a common data source (OpenLCA, GaBi).</p>
+          <p><b>LCC</b> — Life Cycle Costing; the data source for monetary data.</p>
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:24px">Standards &amp; frameworks <span style="font-weight:400;color:var(--muted);font-size:.9rem">— the bibliography behind the KPIs (search to filter)</span></h3>
+    <input id="refSearch" type="search" placeholder="Filter standards…" autocomplete="off" style="border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:.88rem;width:min(320px,100%);margin:4px 0 12px;font-family:var(--sans)">
+    <div class="tablewrap" style="max-height:420px;overflow:auto">
+      <table id="refTable"><thead><tr><th>Label</th><th>Type</th><th>Description</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</section>
+
+<!-- COLUMNS -->
+<section id="columns">
+  <div class="wrap">
+    <span class="kicker">For editors</span>
+    <h2>The 22-column row reference</h2>
+    <p class="lede">Each of the five domain sheets shares these 22 columns. The Metrics List sheet mirrors only the first 18 (it is a raw-row checklist) and drops the four per-company input columns.</p>
+    <details class="fold" style="margin-top:14px">
+      <summary>Show all 22 columns</summary>
+      <div class="inner">
+        <div class="tablewrap" style="box-shadow:none;border:none">
+          <table id="colTable"><thead><tr><th>Column</th><th>Purpose</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </details>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap footnote">
+    <p>This is a derived visual companion to the <em>KPI&nbsp;List</em> workbook and its User Manual. The workbook itself is the catalogue and the data; a separate calculation engine computes the scores from a filled-in workbook. The structure shown is the blank master template — min/max reference values, raw data and per-company weight overrides are intentionally left to be supplied per company and product.</p>
+    <p style="margin-top:10px" id="genline"></p>
+  </div>
+</footer>
+
+<div id="toast"></div>
+
+<script type="application/json" id="catalog">__CATALOG_JSON__</script>
+<script>
+"use strict";
+const DATA = JSON.parse(document.getElementById('catalog').textContent);
+const KPIS = DATA.kpis, REFS = DATA.references, DOMAINS = DATA.domains;
+// drop archived from the live view
+const ACTIVE = {};
+for(const id in KPIS){ if(!KPIS[id].archived) ACTIVE[id]=KPIS[id]; }
+
+const DOMAIN_COLORS = {EN:'#1f7a4d',EC:'#1d6fb0',C:'#0e97a8',R:'#c2792b',S:'#c0556b'};
+const DOMAIN_DESC = {
+  EN:"the product's ecological footprint",
+  EC:'its financial health and cost-effectiveness',
+  C:'how well it supports a circular economy',
+  R:'how efficiently it uses materials and energy',
+  S:'the social value it creates'
+};
+const LVL_COLOR = {1:'var(--l1)',2:'var(--l2)',3:'var(--l3)',4:'var(--l4)',5:'var(--l5)'};
+// Explorer badge colour: each domain's own hue, shaded darker→lighter by level;
+// Level-5 raw data points stay grey everywhere (they are the universal "raw data" marker).
+const _hexRgb=h=>{h=h.replace('#','');return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16));};
+const _mix=(rgb,t,f)=>rgb.map((c,i)=>Math.round(c+(t[i]-c)*f));
+const _hex=rgb=>'#'+rgb.map(c=>Math.max(0,Math.min(255,c)).toString(16).padStart(2,'0')).join('');
+const _LVL_SHADE={1:-0.10,2:0.10,3:0.28,4:0.46};   // <0 darken (mix black), >0 lighten (mix white)
+function levelColor(domain,level){
+  if(level>=5) return '#9aa4ab';                    // raw data point — grey
+  const base=_hexRgb(DOMAIN_COLORS[domain]||'#1f7a4d'), f=_LVL_SHADE[level]||0;
+  return _hex(f<0?_mix(base,[0,0,0],-f):_mix(base,[255,255,255],f));
+}
+const STRAT_INFO = {
+  RAW_VALUE_STRATEGY:['Raw value','A leaf data point — the raw number you supply, taken as-is. These are the Data? = x rows.'],
+  NORMALIZED_RATIO_STRATEGY:['Normalized ratio','Computes a ratio or performance figure, then normalises it onto the 0–1 scale using the row\'s Min and Max.'],
+  WEIGHTED_AVERAGE_STRATEGY:['Weighted average','Combines its children\'s already-normalised scores into a weighted average. Result must land in 0–1.'],
+  WEIGHTED_RATIO_STRATEGY:['Weighted ratio','A weighted-ratio variant of the weighted average; used in only a few places.'],
+  SUM_AGGREGATE_STRATEGY:['Sum aggregate','Adds up its children\'s values (does not average or normalise). Used for quantity / € summation; the result is a raw total.'],
+  FORMULA_VALUE_STRATEGY:['Formula value','Produces a raw value from a small formula over its children that is not a plain sum, e.g. Net Profit = Revenue − costs.']
+};
+
+const $=s=>document.querySelector(s), el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+const esc=s=>String(s==null?'':s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+
+/* ---------- hero pills ---------- */
+(function(){
+  const m=DATA.meta;
+  const raw=Object.values(ACTIVE).filter(k=>k.isRawDataPoint).length;
+  const pills=[['Indicators',Object.keys(ACTIVE).length],['Domains',DOMAINS.length],['Raw data points',raw],['Standards cited',Object.keys(REFS).length]];
+  $('#heroPills').innerHTML=pills.map(p=>`<span class="pill"><b>${p[1]}</b>${p[0]}</span>`).join('');
+})();
+
+/* ---------- big picture fan ---------- */
+$('#fan').innerHTML = DOMAINS.map(d=>{
+  const c=DOMAIN_COLORS[d.id];
+  return `<div class="domcard" style="--dc:${c}">
+    <span class="code">${d.scoreId}</span>
+    <div class="nm">${esc(d.name)}</div>
+    <div class="ds">${esc(DOMAIN_DESC[d.id]||'')}</div>
+  </div>`;
+}).join('');
+
+/* ---------- level legend ---------- */
+(function(){
+  const rows=[
+    [1,'Domain score','the top of one domain','EN0 Environmental Impact Score'],
+    [2,'Sub-score','','EN1 Product Carbon Footprint Score'],
+    [3,'Sub-sub-score','','EN14 Lifecycle Phase Emission'],
+    [4,'Deeper score','','EN131 Sourcing Emission Ratio'],
+    [5,'Raw data point','a leaf input you must supply (grey)','EN1-1 Scope 1 – Direct Emissions']
+  ];
+  $('#levelLegend').innerHTML=rows.map(r=>`
+    <div class="lvl">
+      <div class="chip" style="background:${LVL_COLOR[r[0]]}">L${r[0]}</div>
+      <div><div class="ttl">${r[1]}</div><div style="font-size:.83rem;color:var(--muted)">${r[2]||'&nbsp;'}</div></div>
+      <div class="ex">${esc(r[3])}</div>
+    </div>`).join('');
+})();
+
+/* ---------- carbon ladder ---------- */
+(function(){
+  const chain=['EN0','EN1','EN14','EN131','EN1-1'];
+  $('#ladder').innerHTML=chain.map((id,i)=>{
+    const k=KPIS[id]; if(!k)return '';
+    const indent=i*22;
+    const col=LVL_COLOR[k.level];
+    return `<div style="display:flex;align-items:center;gap:10px;margin:3px 0;padding-left:${indent}px">
+       <span style="color:#c4cdc7;font-family:var(--mono)">${i?'└─':'&nbsp;&nbsp;'}</span>
+       <span class="lvlbadge" style="background:${col}">L${k.level}</span>
+       <span class="node-id">${id}</span>
+       <span style="font-size:.9rem;font-weight:${i===0?700:500}">${esc(k.name)}</span>
+       ${k.isRawDataPoint?'<span class="mini data">raw data</span>':''}
+    </div>`;
+  }).join('') + `<p style="margin:14px 0 0;font-size:.88rem;color:var(--muted)">Reading from the bottom: you measure <code>EN1-1</code>; it feeds <code>EN131</code>; which feeds <code>EN14</code>; which feeds <code>EN1</code>; which feeds <code>EN0</code>; which feeds Sustainability.</p>`;
+})();
+
+/* ---------- strategies ---------- */
+(function(){
+  const counts={};
+  for(const id in ACTIVE){const s=ACTIVE[id].calculationStrategy;counts[s]=(counts[s]||0)+1;}
+  const order=['RAW_VALUE_STRATEGY','NORMALIZED_RATIO_STRATEGY','WEIGHTED_AVERAGE_STRATEGY','WEIGHTED_RATIO_STRATEGY','SUM_AGGREGATE_STRATEGY','FORMULA_VALUE_STRATEGY'];
+  // Data-driven: only show strategies actually used in this catalog (count > 0), in canonical
+  // order, with any not-yet-listed strategies appended. A strategy that drops to 0 rows (e.g.
+  // WEIGHTED_RATIO, re-tagged away during review) disappears on its own instead of showing "0".
+  const present=order.filter(s=>counts[s]>0).concat(Object.keys(counts).filter(s=>!order.includes(s)));
+  const numWords=['zero','one','two','three','four','five','six','seven','eight','nine'];
+  const h=document.getElementById('stratHeading');
+  if(h) h.textContent=(numWords[present.length]||present.length).replace(/^./,c=>c.toUpperCase())+' calculation strategies';
+  $('#stratGrid').innerHTML=present.map(s=>{
+    const info=STRAT_INFO[s]||[s.replace(/_STRATEGY$/,'').replace(/_/g,' ').toLowerCase(),''];
+    return `<div class="card">
+      <span class="tag">${counts[s]} indicators</span>
+      <h4>${info[0]}</h4>
+      <p style="font-family:var(--mono);font-size:.7rem;color:var(--muted);margin:2px 0 8px">${s}</p>
+      <p>${info[1]}</p>
+    </div>`;
+  }).join('');
+})();
+
+/* ---------- glossary tables ---------- */
+(function(){
+  const R=[['R0','Refuse','Avoid unnecessary products and materials.'],['R1','Rethink','Innovate and redesign products for better sustainability.'],['R2','Reduce','Minimise resource consumption and waste generation.'],['R3','Reuse','Re-use a used product with minimal restoration effort.'],['R4','Repair','Fix broken products to extend their lifespan.'],['R5','Refurbish','Restore disposed products to good working condition.'],['R6','Remanufacture','Disassemble and rebuild disposed components into a unit of (at least) original quality.'],['R7','Repurpose','Use disposed components for a different purpose.'],['R8','Recycle','Process disposed materials into secondary materials instead of discarding.'],['R9','Recover','Extract useful materials or energy from disposed waste.']];
+  $('#rTable tbody').innerHTML=R.map(r=>`<tr><td><code>${r[0]}</code></td><td><b>${r[1]}</b></td><td>${r[2]}</td></tr>`).join('');
+  const PLC=[['P','Planning'],['S','Sourcing'],['M','Manufacturing'],['D','Distribution'],['U','Use'],['E','End of Life'],['All','Applies to every stage']];
+  $('#plcTable tbody').innerHTML=PLC.map(r=>`<tr><td><code>${r[0]}</code></td><td>${r[1]}</td></tr>`).join('');
+})();
+
+/* ---------- references table ---------- */
+(function(){
+  const tb=$('#refTable tbody');
+  const rows=Object.keys(REFS).sort().map(label=>{
+    const r=REFS[label];
+    const link=r.link?` <a href="${esc(r.link)}" target="_blank" rel="noopener">↗</a>`:'';
+    return {label,html:`<tr data-l="${esc(label.toLowerCase())}" data-d="${esc((r.description||'').toLowerCase())}"><td><code>${esc(label)}</code>${link}</td><td style="white-space:nowrap;color:var(--muted)">${esc(r.type||'')}</td><td>${esc(r.description||'')}</td></tr>`};
+  });
+  tb.innerHTML=rows.map(r=>r.html).join('');
+  $('#refSearch').addEventListener('input',e=>{
+    const q=e.target.value.toLowerCase().trim();
+    tb.querySelectorAll('tr').forEach(tr=>{
+      const hit=!q||tr.dataset.l.includes(q)||tr.dataset.d.includes(q);
+      tr.style.display=hit?'':'none';
+    });
+  });
+})();
+
+/* ---------- columns table ---------- */
+(function(){
+  const cols=[['#','Unique KPI / metric ID'],['Indicator Name','Human-readable name'],['Description','What it measures'],['Objective / Goal','Why it matters (None on raw rows)'],['Underlying Metrics','Child IDs feeding into this row'],['Parent Metrics','Parent IDs this row feeds into (a nav hyperlink on the Metrics List sheet)'],['Potential Reference Values','Benchmark inputs the formula needs'],['Unit','Unit of the value (% for scores; real units on raw rows)'],['Formula','How the value is computed'],['Reference','Standards code → look up in References Label'],['Level','Hierarchy depth 1–5'],['Data?','x = a raw data point to supply (Level 5)'],['Data Source','Where the raw value comes from (often LCA)'],['Product Life Cycle Stages','Stage codes P/S/M/D/U/E or All'],['Calculation Strategy','One of the six strategies'],['Example Value','Sample value (sparse)'],['Weight','Aggregation weight (equal 1/N defaults)'],['Comment','Notes'],['Target Min','Raw value scoring 0 (worst); per-company, empty by default'],['Target Max','Raw value scoring 1 (best); lower-is-better ⇒ Min > Max'],['Value','Measured number you supply; empty by default'],['Reference Value','Benchmark / prior-period figure some rows compare against']];
+  $('#colTable tbody').innerHTML=cols.map((c,i)=>`<tr><td><b>${esc(c[0])}</b>${i>=18?' <span class="mini" style="background:var(--accent-soft);color:var(--accent-dark)">per-company</span>':''}</td><td>${esc(c[1])}</td></tr>`).join('');
+})();
+
+/* ================= EXPLORER ================= */
+const tabs=$('#domtabs'), treeEl=$('#tree'), detailEl=$('#detail');
+let currentDomain='EN';
+
+tabs.innerHTML=DOMAINS.map(d=>`<button class="domtab" role="tab" data-d="${d.id}" style="--dc:${DOMAIN_COLORS[d.id]}" aria-selected="${d.id==='EN'}"><span class="b"></span>${esc(d.name)}</button>`).join('');
+tabs.addEventListener('click',e=>{const b=e.target.closest('.domtab');if(!b)return;currentDomain=b.dataset.d;tabs.querySelectorAll('.domtab').forEach(t=>t.setAttribute('aria-selected',t===b));renderTree();});
+
+function buildNode(id,path){
+  const k=KPIS[id]; if(!k) return null;
+  // cycle guard within a path
+  if(path.includes(id)) return null;
+  const node=el('div','node');
+  const row=el('div','node-row'+(k.isRawDataPoint?' raw':''));
+  row.dataset.id=id;
+  const kids=(k.underlying||[]).filter(c=>KPIS[c]&&!KPIS[c].archived);
+  const hasKids=kids.length>0;
+  const twist=el('span','twist'+(hasKids?'':' leaf'),hasKids?'▶':'');
+  const badge=el('span','lvlbadge','L'+k.level);badge.style.background=levelColor(k.domain,k.level);
+  const idEl=el('span','node-id',esc(id));
+  const nameEl=el('span','node-name',esc(k.name));
+  row.append(twist,badge,idEl,nameEl);
+  if(k.isRawDataPoint) row.append(el('span','mini data','data'));
+  if((k.parents||[]).filter(p=>KPIS[p]).length>1) row.append(el('span','mini shared','shared'));
+  node.append(row);
+  let childWrap=null;
+  if(hasKids){
+    childWrap=el('div','children');
+    const newPath=path.concat(id);
+    kids.forEach(c=>{const cn=buildNode(c,newPath);if(cn)childWrap.append(cn);});
+    node.append(childWrap);
+    const toggle=(open)=>{
+      const willOpen = open!=null?open:!childWrap.classList.contains('open');
+      childWrap.classList.toggle('open',willOpen);
+      twist.classList.toggle('open',willOpen);
+    };
+    twist.addEventListener('click',ev=>{ev.stopPropagation();toggle();});
+    row.addEventListener('dblclick',()=>toggle());
+  }
+  row.addEventListener('click',()=>{selectNode(id,row);});
+  node._toggle=childWrap?(o)=>{childWrap.classList.toggle('open',o);twist.classList.toggle('open',o);}:null;
+  return node;
+}
+
+function renderTree(){
+  treeEl.innerHTML='';
+  const root=DOMAINS.find(d=>d.id===currentDomain).scoreId;
+  const tree=buildNode(root,[]);
+  treeEl.append(tree);
+  // open level 1 & its direct children by default
+  if(tree._toggle) tree._toggle(true);
+  tree.querySelectorAll(':scope > .children > .node').forEach(n=>{if(n._toggle)n._toggle(true);});
+}
+
+function setAll(open){
+  treeEl.querySelectorAll('.children').forEach(c=>c.classList.toggle('open',open));
+  treeEl.querySelectorAll('.twist').forEach(t=>{if(!t.classList.contains('leaf'))t.classList.toggle('open',open);});
+}
+$('#expandAll').addEventListener('click',()=>setAll(true));
+$('#collapseAll').addEventListener('click',()=>setAll(false));
+
+function selectNode(id,rowEl){
+  treeEl.querySelectorAll('.node-row.sel').forEach(r=>r.classList.remove('sel'));
+  if(rowEl) rowEl.classList.add('sel');
+  renderDetail(id);
+}
+
+function refChip(label){
+  const r=REFS[label];
+  return `<span class="refchip" data-ref="${esc(label)}" title="${r?esc(r.title||label):''}">${esc(label)}</span>`;
+}
+function idChip(id){
+  const k=KPIS[id];
+  if(!k) return `<span class="idchip" style="cursor:default">${esc(id)}</span>`;
+  return `<span class="idchip" data-goto="${esc(id)}" title="${esc(k.name)}">${esc(id)}</span>`;
+}
+
+function renderDetail(id){
+  const k=KPIS[id]; if(!k)return;
+  const col=levelColor(k.domain,k.level);
+  const stratName=(STRAT_INFO[k.calculationStrategy]||[k.calculationStrategy])[0];
+  let h=`<div class="breadcrumb">`+buildCrumb(id).map(idChip).join('<span style="color:#c4cdc7">›</span>')+`</div>`;
+  h+=`<div class="d-head"><span class="d-id" style="background:${col}">${esc(id)}</span>`;
+  h+=`<span class="lvlbadge" style="background:${col}">Level ${k.level}</span>`;
+  if(k.isRawDataPoint) h+=`<span class="mini data">raw data point</span>`;
+  h+=`</div>`;
+  h+=`<div class="d-name">${esc(k.name)}</div>`;
+  h+=`<span class="d-strat" title="Calculation strategy">${esc(stratName)}</span>`;
+  if(k.description) h+=`<p class="d-desc">${esc(k.description)}</p>`;
+
+  const kv=[];
+  if(k.objective) kv.push(['Objective',esc(k.objective)]);
+  if(k.unit) kv.push(['Unit',`<code>${esc(k.unit)}</code>`]);
+  if(k.dataSource) kv.push(['Data source',`<code>${esc(k.dataSource)}</code>`]);
+  if(k.lifecycleStages&&k.lifecycleStages.length) kv.push(['Life-cycle stage',`<span class="chips">${k.lifecycleStages.map(s=>`<span class="stagechip">${esc(s)}</span>`).join('')}</span>`]);
+  if(k.potentialReferenceValues) kv.push(['Reference values',esc(k.potentialReferenceValues)]);
+  if(k.exampleValue) kv.push(['Example',esc(k.exampleValue)]);
+  if(kv.length) h+=`<dl class="kv">`+kv.map(p=>`<dt>${p[0]}</dt><dd>${p[1]}</dd>`).join('')+`</dl>`;
+
+  if(k.formula){h+=`<div class="d-block"><div class="lbl">Formula</div><div class="formula">${esc(k.formula)}</div></div>`;}
+
+  const under=(k.underlying||[]).filter(c=>KPIS[c]);
+  if(under.length){h+=`<div class="d-block"><div class="lbl">Underlying metrics — feed into this (${under.length})</div><div class="chips">${under.map(idChip).join('')}</div></div>`;}
+  const par=(k.parents||[]).filter(c=>KPIS[c]);
+  if(par.length){h+=`<div class="d-block"><div class="lbl">Parent metrics — this feeds up into ${par.length>1?'('+par.length+', shared across branches)':''}</div><div class="chips">${par.map(idChip).join('')}</div></div>`;}
+
+  if(k.references&&k.references.length){h+=`<div class="d-block"><div class="lbl">Standards & references</div><div class="chips">${k.references.map(refChip).join('')}</div></div>`;}
+  if(k.comment){h+=`<div class="d-block"><div class="lbl">Comment</div><p style="margin:0;font-size:.88rem;color:#3a4a41">${esc(k.comment)}</p></div>`;}
+
+  detailEl.innerHTML=h;
+  detailEl.scrollTop=0;
+  detailEl.querySelectorAll('[data-ref]').forEach(c=>c.addEventListener('click',()=>showRef(c.dataset.ref)));
+  detailEl.querySelectorAll('[data-goto]').forEach(c=>c.addEventListener('click',()=>gotoId(c.dataset.goto)));
+}
+
+// breadcrumb: walk up first parent chain to a domain root
+function buildCrumb(id){
+  const chain=[id]; let cur=id, guard=0;
+  while(guard++<12){
+    const k=KPIS[cur]; if(!k||!k.parents||!k.parents.length)break;
+    const p=k.parents.find(x=>KPIS[x]); if(!p||chain.includes(p))break;
+    chain.unshift(p); cur=p;
+  }
+  return chain;
+}
+
+function showRef(label){
+  const r=REFS[label]; const t=$('#toast');
+  if(!r){t.innerHTML=`<div class="tt">${esc(label)}</div><div>No entry found in the references sheet.</div>`;}
+  else{
+    const link=r.link?`<div style="margin-top:8px"><a href="${esc(r.link)}" target="_blank" rel="noopener">Open source ↗</a></div>`:'';
+    t.innerHTML=`<div class="tt">${esc(label)}</div><div>${esc(r.description||r.title||'')}</div>${r.type?`<div class="ty">${esc(r.type)}</div>`:''}${link}`;
+  }
+  t.classList.add('show');
+  clearTimeout(showRef._t); showRef._t=setTimeout(()=>t.classList.remove('show'),6000);
+}
+
+// jump to an id: switch domain if needed, expand path, select
+function gotoId(id){
+  const k=KPIS[id]; if(!k)return;
+  const dom=k.domain;
+  if(dom!==currentDomain){
+    currentDomain=dom;
+    tabs.querySelectorAll('.domtab').forEach(t=>t.setAttribute('aria-selected',t.dataset.d===dom));
+    renderTree();
+  }
+  // expand crumb path then find a visible row
+  const crumb=buildCrumb(id);
+  // expand each ancestor
+  for(const cid of crumb){
+    const rows=[...treeEl.querySelectorAll(`.node-row[data-id="${CSS.escape(cid)}"]`)];
+    rows.forEach(r=>{const wrap=r.parentElement.querySelector(':scope > .children');if(wrap){wrap.classList.add('open');const tw=r.querySelector('.twist');if(tw)tw.classList.add('open');}});
+  }
+  const target=treeEl.querySelector(`.node-row[data-id="${CSS.escape(id)}"]`);
+  if(target){selectNode(id,target);target.scrollIntoView({block:'center',behavior:'smooth'});}
+  else{renderDetail(id);}
+  document.getElementById('explorer').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ---------- search ---------- */
+const searchInput=$('#search');
+searchInput.placeholder='Search all '+Object.keys(ACTIVE).length+' indicators…';
+searchInput.addEventListener('input',e=>{
+  const q=e.target.value.toLowerCase().trim();
+  if(!q){renderTree();return;}
+  const hits=Object.values(ACTIVE).filter(k=>k.id.toLowerCase().includes(q)||k.name.toLowerCase().includes(q)||(k.description||'').toLowerCase().includes(q)).slice(0,80);
+  treeEl.innerHTML='';
+  if(!hits.length){treeEl.append(el('div','',`<p style="padding:16px;color:var(--muted)">No indicators match “${esc(q)}”.</p>`));return;}
+  const head=el('div','',`<p style="padding:8px 10px;color:var(--muted);font-size:.82rem">${hits.length} match${hits.length>1?'es':''}${hits.length>=80?' (showing first 80)':''}</p>`);
+  treeEl.append(head);
+  hits.forEach(k=>{
+    const row=el('div','node-row'+(k.isRawDataPoint?' raw':''));
+    row.dataset.id=k.id;
+    const badge=el('span','lvlbadge','L'+k.level);badge.style.background=levelColor(k.domain,k.level);
+    row.append(el('span','twist leaf'),badge,el('span','node-id',esc(k.id)),el('span','node-name',esc(k.name)+' '));
+    const dc=el('span','mini',DOMAINS.find(d=>d.id===k.domain).name);dc.style.background=DOMAIN_COLORS[k.domain]+'22';dc.style.color=DOMAIN_COLORS[k.domain];
+    row.append(dc);
+    if(k.isRawDataPoint)row.append(el('span','mini data','data'));
+    row.addEventListener('click',()=>selectNode(k.id,row));
+    treeEl.append(el('div','node').appendChild(row).parentElement);
+  });
+});
+
+/* ---------- generated line ---------- */
+$('#genline').textContent='Visualisation generated from '+DATA.meta.source+' · '+Object.keys(ACTIVE).length+' active indicators · '+Object.keys(REFS).length+' references.';
+
+renderTree();
+</script>
+</body>
+</html>
