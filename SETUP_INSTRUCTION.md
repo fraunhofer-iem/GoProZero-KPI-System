@@ -5,7 +5,7 @@
 > This brief created the repository. It records why the design looks the way it
 > does, which is why it stays here. Do not follow it as a setup guide. The
 > repository has moved on since then, and [README.md](README.md) plus
-> [CLAUDE.md](CLAUDE.md) describe how it actually works now.
+> [AGENTS.md](AGENTS.md) describe how it actually works now.
 >
 > What changed since then:
 >
