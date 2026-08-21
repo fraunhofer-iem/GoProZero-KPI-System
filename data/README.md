@@ -116,4 +116,4 @@ Recreate `data/literature/` from the links above (or your institutional access) 
 folder layout the tooling expects: standards in per-body subfolders (`ISO 14XXX/`,
 `ESRS .../`, `GRI .../`, `SASB .../`, …) and journal articles under `Papers/`, each PDF
 **filename-prefixed with its reference code** (e.g. `RM+23-...pdf`). `tools/scripts/pdf_search.py`
-and the `kpi-literature-crosschecker` agent resolve sources by that code prefix.
+and the `kpi-literature-crosschecker` review brief resolve sources by that code prefix.

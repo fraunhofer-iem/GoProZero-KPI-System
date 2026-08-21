@@ -1,6 +1,6 @@
 # KPI System — Understanding & Crosscheck
 
-> **Purpose of this document.** This is *not* the user manual. It is my (Claude's)
+> **Purpose of this document.** This is *not* the user manual. It is an AI assistant's
 > structured understanding of the KPI workbook (`data/KPI List.xlsx`), written so you can
 > verify or correct it **before** the manual is drafted. Please mark anything wrong,
 > incomplete, or imprecise. The manual will be built from whatever this document settles on.

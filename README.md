@@ -62,7 +62,8 @@ uv run tools/scripts/export_snapshot.py
 
 1. Edit `data/KPI List.xlsx`, either in Excel or programmatically via
    `tools/scripts/xlsx_edit.py` (see "Editing programmatically" below). Do *not* edit the
-   workbook with a plain openpyxl `load`/`save`: it destroys threaded comments.
+   workbook with a plain openpyxl `load`/`save`: it drops the anchored Top-Level diagram and
+   rewrites every package part.
 2. Stage and commit. The pre-commit hook regenerates `snapshot/` automatically and adds
    it to the commit, so the review surface never drifts from the workbook.
 3. Review changes in the VS Code Source Control panel. The `snapshot/*.tsv` diffs show
@@ -74,17 +75,20 @@ uv run tools/scripts/export_snapshot.py
 ## Editing programmatically (preserves everything)
 
 **Why not just use openpyxl?** A plain openpyxl `load_workbook` and `save` rebuilds the whole
-file. It silently drops the parts it does not model. The costly loss is this workbook's **62
-modern *threaded comments***, along with their text and authors. Charts and data validation may
-go the same way. After such a round-trip the comments *look* present but contain only the "Your
-version of Excel allows you to read this threaded comment…" placeholder. Fill colours and
-formulas do survive, but the comment loss is silent and irreversible.
+file. It silently drops the parts it does not model. Here that costs the **anchored Top-Level
+diagram**, and it rewrites all 41 package parts, so the tracked binary churns even when a single
+cell changed. Fill colours, formulas, tables and conditional formatting do survive.
+
+This convention was originally written to protect the workbook's threaded comments, which a
+round-trip left *looking* present while containing only the "Your version of Excel allows you to
+read this threaded comment…" placeholder. Those comments were removed before publication, so that
+particular hazard no longer applies to this file — but the rewrite behaviour that caused it does.
 
 **The safe tool: `tools/scripts/xlsx_edit.py`.** It treats the `.xlsx` as the zip package it is.
 It copies every part byte-for-byte and rewrites *only* the worksheet XML where a cell actually
 changes. A check confirms this: editing one cell changes exactly one internal part
-(`xl/worksheets/sheetN.xml`), and all threaded comments, persons, colours and hyperlinks survive
-bit-for-bit. Reassembled workbooks go to `output/`, so no script run touches the canonical
+(`xl/worksheets/sheetN.xml`), and the styles, theme, shared strings, tables, anchored drawing
+and hyperlinks all survive bit-for-bit. Reassembled workbooks go to `output/`, so no script run touches the canonical
 `data/` copy.
 
 ```bash
@@ -144,13 +148,18 @@ prefix.
   ```bash
   uv run tools/scripts/pdf_search.py "data/literature/ISO 14XXX/ISO 14067.pdf" "carbon footprint" --context 200
   ```
-- `.claude/agents/kpi-literature-crosschecker.md` is a Claude Code subagent that audits a
+- `.claude/agents/kpi-literature-crosschecker.md` is a review brief that audits a
   *bounded batch* of KPIs (one sheet, or an ID prefix like `EN1`) against the cited sources. It
   checks the indicator name, the description and the reference code against the source text,
   while tolerating intentional product-specific adaptations. It asserts nothing without a
   page-cited quote, and it writes a findings report to `reviews/`. The agent never edits the
   workbook. You apply approved fixes via Excel or `tools/scripts/xlsx_edit.py`. Invoke it per
   batch to keep accuracy high, e.g. *"cross-check the EN1 metrics against the literature."*
+  It is packaged as a Claude Code subagent, but only its YAML frontmatter is tool-specific:
+  the body is a plain-text brief you can hand to any coding agent, or read yourself as a
+  description of what a good source review looks like. `AGENTS.md` lists all three briefs.
+  Note that `data/literature/` is gitignored, so this one has nothing to search in a fresh
+  clone until you supply your own sources.
 
 ## Documentation
 
@@ -208,7 +217,8 @@ List.xlsx" --json output/kpi-catalog.json`.
 │                            #   the master visualization HTML is committed as an example
 ├── reviews/                 # literature cross-check + description-audit reports
 ├── docs/                    # user manual (+ PDF source) + system-understanding notes
-├── .claude/agents/          # kpi-literature-crosschecker subagent
+├── AGENTS.md                # conventions brief for humans and coding agents
+├── .claude/agents/          # the three review briefs, packaged for Claude Code
 ├── tools/
 │   ├── scripts/             # workbook & build utilities (self-contained uv run scripts)
 │   ├── templates/           # HTML template for the visualization
@@ -245,10 +255,10 @@ KPIs and their now-orphaned descendants. It writes a derived workbook to `output
   load-then-save cycle in openpyxl keeps the theme, fill colours, merged cells, row heights,
   fonts and hyperlinks across the whole workbook, with no palette drift. Theme-indexed fills
   like the Resource Efficiency sheet stay their intended colour instead of turning purple.
-  Two things openpyxl cannot round-trip need special handling. Anchored images such as the
-  Top-Level diagram get grafted back after save. The master's threaded comments do not
-  survive, though the textual *Comment* column does. The canonical `data/` workbook is only
-  ever opened read-only.
+  One thing openpyxl cannot round-trip needs special handling: anchored images such as the
+  Top-Level diagram get grafted back after save. The master no longer carries cell comments,
+  and the textual *Comment* column is unaffected either way. The canonical `data/` workbook is
+  only ever opened read-only.
 
 ```bash
 # reads data/others/acme.scope.json -> output/<label> KPI List.xlsx
