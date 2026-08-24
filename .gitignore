@@ -15,7 +15,8 @@ data/others/
 
 # Company-specific literature cross-check reports. Kept local, not versioned.
 # (Generic, domain-level reviews under reviews/ are versioned.)
-reviews/*-crosscheck.md
+reviews/*
+!reviews/.gitkeep
 
 # output/ — generated artifacts: derived workbooks, catalog JSON, HTML manuals and
 # visualizations, PDFs, and per-project build subfolders. All of it is regenerable from
