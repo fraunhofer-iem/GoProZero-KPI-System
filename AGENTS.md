@@ -39,20 +39,14 @@ things to get right.
 
 ## Layout
 
-- `data/KPI List.xlsx` — the canonical workbook (tracked as binary). See [data/README.md](data/README.md).
-- `snapshot/` — one `.tsv` per sheet; the primary review surface (generated, committed).
-- `tools/kpi-engine/` — Python package that reads the workbook into a model and
-  computes/validates/exports it. Has its own tests (`pytest` under `tools/kpi-engine/`).
-- `tools/scripts/` — standalone `uv run` utilities (see below).
-- `tools/templates/` — HTML templates for the manual and visualization (edit design here,
-  not the generated HTML).
-- `reviews/` — domain-level audits of KPI descriptions & references (see the review prompts
-  in `.claude/agents/`, described at the end of this file).
-- `docs/` — `USER_MANUAL.md` and `KPI_System_Understanding.md`.
-- `output/` — generated artifacts (workbooks, catalog JSON, HTML, PDF); gitignored except
-  the committed generic-master `kpi-system-visualization.html`.
-- `data/literature/`, `data/others/` — **local only, gitignored** (large + copyrighted /
-  company-specific). Absent in a fresh clone.
+The [README](README.md#layout) carries the directory tree. Three things to know before you
+touch anything:
+
+- `data/literature/` and `data/others/` are **local only and gitignored**: too large to
+  track, and either copyrighted or company-specific. A fresh clone does not have them.
+- Git ignores `output/`, except for the committed generic-master
+  `kpi-system-visualization.html`.
+- Edit designs in `tools/templates/`, never in the generated HTML.
 
 ## The workbook model (for reading `snapshot/*.tsv`)
 
