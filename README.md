@@ -1,14 +1,12 @@
-# Version-controlled KPI workbook
+# A Sustainability KPI System Workbook
 
-The [Sustainability KPI List](./data/KPI%20List.xlsx) is manually curated by us from
-literature reviews and input from the project partners. The purpose of this repository
-however is to make **every change to that workbook reviewable like code** and the defined
-AI agents is to help with verification, consistency checks, manual generation, and
-tailoring the KPI system.
+The [KPI system workbook](./data/KPI%20List.xlsx) is manually curated by us from
+literature reviews and input from partners of the [GoProZero Project](https://its-owl.de/en/projekte/circular-solutions-data-and-ai-for-sustainable-engineering-goprozero/).
+The purpose of this repository however is to make **every change to that workbook reviewable
+like code**, while the defined AI agents assist with verification, consistency checks,
+manual generation, and tailoring the KPI system.
 
-The visual manual is deployed at
-https://fraunhofer-iem.github.io/GoProZero-KPI-System/ while the [data/README.md](data/README.md)
-covers the KPI list itself and the literature behind it.
+The visual manual: https://fraunhofer-iem.github.io/GoProZero-KPI-System/
 
 ## Design
 
@@ -56,7 +54,7 @@ uv run tools/scripts/export_snapshot.py
 declares its dependencies in a PEP 723 header, so `uv run` provisions them on first use.
 The repo carries no `requirements.txt` and no virtual environment to activate.
 
-## Daily workflow
+## Workflow
 
 1. Edit `data/KPI List.xlsx` in Excel, or through `tools/scripts/xlsx_edit.py`. Do *not*
    edit the workbook with a plain openpyxl `load`/`save`: it drops the anchored Top-Level
@@ -102,7 +100,7 @@ the distribution format.
 │   └── <one .tsv per sheet>
 ├── output/                  # derived workbooks, catalog JSON, manual PDF (gitignored);
 │                            #   the master visualization HTML is committed as an example
-├── reviews/                 # literature cross-check and description-audit reports
+├── reviews/                 # literature cross-check and description-audit reports (gitignored)
 ├── docs/                    # user manual, tooling reference, system-understanding notes
 ├── tools/
 │   ├── scripts/             # workbook and build utilities (self-contained uv run scripts)
